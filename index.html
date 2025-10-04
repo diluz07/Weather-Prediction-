@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Rain Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 1s ease;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* --- Animated Backgrounds --- */
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        /* Rain Animation */
+        .rain-drop {
+            position: absolute;
+            bottom: 100%;
+            width: 2px;
+            height: 80px;
+            background: linear-gradient(to top, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 100%);
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(120vh);
+            }
+        }
+
+        /* Cloud Animation */
+        .cloud {
+            position: absolute;
+            top: 50%;
+            width: 200px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 60px;
+            opacity: 0.8;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+        }
+        .cloud::before {
+            width: 100px;
+            height: 100px;
+            top: -50px;
+            left: 40px;
+        }
+        .cloud::after {
+            width: 60px;
+            height: 60px;
+            top: -30px;
+            right: 40px;
+        }
+        .cloud-1 { top: 10%; left: -250px; transform: scale(0.8); }
+        .cloud-2 { top: 25%; left: -250px; transform: scale(0.6); }
+        .cloud-3 { top: 60%; left: -250px; transform: scale(0.9); }
+
+        @keyframes drift {
+            from { transform: translateX(-250px); }
+            to { transform: translateX(110vw); }
+        }
+
+        /* Sunny Animation */
+        .sun {
+            position: absolute;
+            top: 8%;
+            right: 8%;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #FFFFA3 0%, #FFD700 40%, rgba(255,215,0,0) 70%);
+            border-radius: 50%;
+            animation: pulse 5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.5), 0 0 50px 30px rgba(255, 255, 0, 0.3);
+            }
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 50px 25px rgba(255, 215, 0, 0.7), 0 0 80px 50px rgba(255, 255, 0, 0.5);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Background Containers -->
+    <div id="sunny-bg" class="background-container hidden"><div class="sun"></div></div>
+    <div id="rainy-bg" class="background-container hidden"></div>
+    <div id="cloudy-bg" class="background-container hidden">
+        <div class="cloud cloud-1"></div>
+        <div class="cloud cloud-2"></div>
+        <div class="cloud cloud-3"></div>
+    </div>
+
+    <div class="w-full max-w-md mx-auto z-10">
+        <div class="card rounded-2xl p-6 md:p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-white">Rainfall Probability</h1>
+                <p class="text-blue-200 mt-2">Using NASA Historical Data</p>
+            </div>
+
+            <!-- Input Form -->
+            <div class="space-y-4">
+                <div>
+                    <label for="place" class="block text-sm font-medium text-blue-100 mb-1">Location</label>
+                    <input type="text" id="place" placeholder="e.g., Kochi, India" class="w-full bg-gray-800 text-white border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label for="date" class="block text-sm font-medium text-blue-100 mb-1">Date for Prediction</label>
+                    <input type="date" id="date" class="w-full bg-gray-800 text-white border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <button id="predictBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-lg">
+                    Get Rain Probability
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="result-container" class="mt-6 text-center hidden">
+                <!-- Loader -->
+                <div id="loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-500 h-12 w-12 mx-auto mb-4 hidden"></div>
+                
+                <!-- Prediction Output -->
+                <div id="prediction-output" class="hidden">
+                    <!-- Current Weather -->
+                    <div class="mb-6 p-4 bg-gray-800/50 rounded-lg">
+                        <h3 class="text-xl font-bold text-white mb-2">Current Conditions</h3>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                             <div>
+                                <p class="text-sm text-blue-200">Now</p>
+                                <p id="current-weather-status" class="font-bold text-white text-lg">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-blue-200">Temp</p>
+                                <p id="current-temp" class="font-bold text-white text-lg">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-blue-200">Humidity</p>
+                                <p id="current-humidity" class="font-bold text-white text-lg">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Probability -->
+                    <h2 id="probability-text" class="text-6xl font-bold transition-colors duration-500"></h2>
+                    <p id="probability-summary" class="text-xl mt-1 mb-2 transition-colors duration-500"></p>
+                    <p id="prediction-for-date" class="text-blue-200 mb-4"></p>
+
+                     <!-- Visualization -->
+                    <div class="w-full bg-gray-700 rounded-full h-4 mb-1">
+                        <div id="probability-bar" class="h-4 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                    </div>
+                    <p id="location-info" class="text-xs text-gray-400 mt-2"></p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error-message" class="hidden p-4 bg-red-900/50 text-red-200 rounded-lg">
+                    <p id="error-text"></p>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-gray-400 mt-6">
+                Disclaimer: This is a probability based on NASA's climatology data from previous years. It is not a live weather forecast.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const predictBtn = document.getElementById('predictBtn');
+        const placeInput = document.getElementById('place');
+        const dateInput = document.getElementById('date');
+        const bodyEl = document.body;
+
+        const resultContainer = document.getElementById('result-container');
+        const loader = document.getElementById('loader');
+        const predictionOutput = document.getElementById('prediction-output');
+        const errorMessage = document.getElementById('error-message');
+        
+        // Result display elements
+        const predictionForDateEl = document.getElementById('prediction-for-date');
+        const locationInfo = document.getElementById('location-info');
+        const errorText = document.getElementById('error-text');
+        const currentTempEl = document.getElementById('current-temp');
+        const currentHumidityEl = document.getElementById('current-humidity');
+        const currentWeatherStatusEl = document.getElementById('current-weather-status');
+        
+        // Background elements
+        const sunnyBg = document.getElementById('sunny-bg');
+        const rainyBg = document.getElementById('rainy-bg');
+        const cloudyBg = document.getElementById('cloudy-bg');
+
+        // Set default date to today
+        dateInput.value = new Date().toISOString().split('T')[0];
+
+        predictBtn.addEventListener('click', async () => {
+            const place = placeInput.value;
+            const date = dateInput.value;
+
+            if (!place || !date) {
+                showError("Please provide a location and a date.");
+                return;
+            }
+
+            resultContainer.classList.remove('hidden');
+            predictionOutput.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                // --- 1. Geocode Location Name to Coordinates ---
+                const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`;
+                const geoResponse = await fetch(geoUrl, {
+                    headers: { 'User-Agent': 'NASA Rain Predictor App/1.0' }
+                });
+                if (!geoResponse.ok) throw new Error('Geocoding service is unavailable.');
+                
+                const geoData = await geoResponse.json();
+                if (geoData.length === 0) {
+                    throw new Error(`Could not find coordinates for "${place}". Please try a more specific location.`);
+                }
+                const lat = geoData[0].lat;
+                const lon = geoData[0].lon;
+                
+                // --- 2. Fetch both current weather and historical probability in parallel ---
+                const fetchCurrentWeather = async () => {
+                    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code`;
+                    const response = await fetch(weatherUrl);
+                    if (!response.ok) console.error('Could not fetch current weather.');
+                    const data = await response.json();
+                    displayCurrentWeather(data.current);
+                };
+                
+                const calculateHistoricalProbability = calculateAndDisplayProbability(lat, lon, date, geoData[0].display_name);
+
+                await Promise.all([fetchCurrentWeather(), calculateHistoricalProbability]);
+                
+                predictionOutput.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error during prediction process:", error);
+                showError(error.message || "An unexpected error occurred.");
+            } finally {
+                loader.classList.add('hidden');
+            }
+        });
+        
+        async function calculateAndDisplayProbability(lat, lon, dateString, locationName) {
+            const targetDate = new Date(dateString + 'T12:00:00Z');
+            const N = 15; 
+            let rainyDaysCount = 0;
+            const promises = [];
+
+            for (let i = 1; i <= N; i++) {
+                const year = targetDate.getUTCFullYear() - i;
+                if (year < 2001) break;
+                const pastDate = new Date(targetDate);
+                pastDate.setUTCFullYear(year);
+                const formattedDate = formatDateForApi(pastDate);
+                const parameters = "PRECTOTCORR"; 
+                const apiUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`;
+                promises.push(fetch(apiUrl).then(res => res.ok ? res.json() : null));
+            }
+
+            const results = await Promise.all(promises);
+            let validYears = 0;
+            results.forEach(data => {
+                if (data && data.properties?.parameter?.PRECTOTCORR) {
+                    const precipData = data.properties.parameter.PRECTOTCORR;
+                    const dateKey = Object.keys(precipData)[0];
+                    if (dateKey && precipData[dateKey] > -999) {
+                        validYears++;
+                        if (precipData[dateKey] > 0.5) rainyDaysCount++;
+                    }
+                }
+            });
+
+            if (validYears === 0) throw new Error("Could not retrieve any historical data for this date.");
+            
+            const probability = Math.round((rainyDaysCount / validYears) * 100);
+            displayProbability(probability, dateString, validYears, locationName);
+        }
+
+        function displayProbability(probability, dateString, yearsOfData, locationName) {
+            const probabilityTextEl = document.getElementById('probability-text');
+            const probabilitySummaryEl = document.getElementById('probability-summary');
+            const probabilityBarEl = document.getElementById('probability-bar');
+
+            probabilityTextEl.textContent = `${probability}%`;
+            predictionForDateEl.textContent = `for ${formatDateForDisplay(dateString)}`;
+            locationInfo.textContent = `Based on ${yearsOfData} years of data for ${locationName.split(',')[0]}`;
+
+            let summary = "";
+            let barColorClass = "";
+            let textColorClass = "";
+
+            resetBackgrounds();
+
+            if (probability <= 30) {
+                summary = "Low Chance of Rain";
+                barColorClass = "bg-green-500";
+                textColorClass = "text-green-400";
+                sunnyBg.classList.remove('hidden');
+                bodyEl.className = 'bg-gradient-to-br from-sky-400 to-blue-600 min-h-screen flex items-center justify-center p-4';
+            } else if (probability <= 60) {
+                summary = "Moderate Chance of Rain";
+                barColorClass = "bg-yellow-500";
+                textColorClass = "text-yellow-400";
+                cloudyBg.classList.remove('hidden');
+                restartCloudAnimation();
+                bodyEl.className = 'bg-gradient-to-br from-slate-600 to-gray-700 min-h-screen flex items-center justify-center p-4';
+            } else {
+                summary = "High Chance of Rain";
+                barColorClass = "bg-red-500";
+                textColorClass = "text-red-400";
+                rainyBg.classList.remove('hidden');
+                createRain();
+                bodyEl.className = 'bg-gradient-to-br from-gray-800 to-slate-900 min-h-screen flex items-center justify-center p-4';
+            }
+
+            probabilitySummaryEl.textContent = summary;
+            
+            setTimeout(() => {
+                probabilityBarEl.style.width = `${probability}%`;
+            }, 10);
+
+            probabilityBarEl.className = 'h-4 rounded-full transition-all duration-1000 ease-out';
+            probabilityTextEl.className = 'text-6xl font-bold transition-colors duration-500';
+            
+            probabilityBarEl.classList.add(barColorClass);
+            probabilityTextEl.classList.add(textColorClass);
+            probabilitySummaryEl.className = `text-xl mt-1 mb-2 transition-colors duration-500 ${textColorClass}`;
+        }
+
+        function createRain() {
+            rainyBg.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = `${Math.random() * 100}vw`;
+                drop.style.animationDuration = `${0.5 + Math.random() * 0.5}s`;
+                drop.style.animationDelay = `${Math.random() * 5}s`;
+                rainyBg.appendChild(drop);
+            }
+        }
+
+        function restartCloudAnimation() {
+            const clouds = cloudyBg.querySelectorAll('.cloud');
+            clouds.forEach(cloud => {
+                cloud.style.animation = 'none';
+                void cloud.offsetWidth; // Trigger reflow
+            });
+            cloudyBg.querySelector('.cloud-1').style.animation = `drift 25s linear infinite`;
+            cloudyBg.querySelector('.cloud-2').style.animation = `drift 35s linear infinite 5s`;
+            cloudyBg.querySelector('.cloud-3').style.animation = `drift 30s linear infinite 2s`;
+        }
+        
+        function resetBackgrounds() {
+            sunnyBg.classList.add('hidden');
+            rainyBg.classList.add('hidden');
+            cloudyBg.classList.add('hidden');
+            rainyBg.innerHTML = '';
+        }
+
+        function formatDateForApi(date) {
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            return `${year}${month}${day}`;
+        }
+
+        function formatDateForDisplay(dateString) { // e.g., "2025-10-04"
+            const [year, month, day] = dateString.split('-');
+            return `${day}-${month}-${year}`; // Format as DD-MM-YYYY
+        }
+
+        function displayCurrentWeather(current) {
+            if(!current) return;
+            currentTempEl.textContent = `${Math.round(current.temperature_2m)}°C`;
+            currentHumidityEl.textContent = `${current.relative_humidity_2m}%`;
+            currentWeatherStatusEl.textContent = getWeatherDescription(current.weather_code);
+        }
+        
+        function getWeatherDescription(code) {
+             const descriptions = {
+                0: 'Clear', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Rime Fog',
+                51: 'Light Drizzle', 53: 'Drizzle', 55: 'Dense Drizzle', 56: 'Freezing Drizzle', 57: 'Dense Freezing Drizzle',
+                61: 'Slight Rain', 63: 'Rain', 65: 'Heavy Rain', 66: 'Freezing Rain', 67: 'Heavy Freezing Rain',
+                71: 'Slight Snow', 73: 'Snow', 75: 'Heavy Snow', 77: 'Snow Grains',
+                80: 'Slight Showers', 81: 'Showers', 82: 'Violent Showers', 85: 'Snow Showers', 86: 'Heavy Snow Showers',
+                95: 'Thunderstorm', 96: 'Thunderstorm & Hail', 99: 'Thunderstorm & Hail'
+            };
+            return descriptions[code] || 'Unknown';
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            resultContainer.classList.remove('hidden');
+            loader.classList.add('hidden');
+            predictionOutput.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+            resetBackgrounds();
+            bodyEl.className = 'bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4';
+        }
+    </script>
+</body>
+</html>
+
