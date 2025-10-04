@@ -3,9 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NASA Rain Predictor</title>
+    <title>NASA Weather Predictor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Free Map Library (Leaflet.js) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Flatpickr Calendar Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -25,6 +32,64 @@
             to { transform: rotate(360deg); }
         }
         
+        /* --- Map Modal --- */
+        #map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        #map-modal.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #map-container {
+            width: 90%;
+            height: 90%;
+            max-width: 1200px;
+            max-height: 800px;
+            border-radius: 16px;
+        }
+        .map-ui {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1001; /* Increased z-index to ensure it's on top of the map */
+        }
+        .map-ui button {
+             background-color: rgba(0,0,0,0.5);
+             color: white;
+             border: 1px solid white;
+             padding: 10px 20px;
+             border-radius: 8px;
+             cursor: pointer;
+        }
+         .map-instructions {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background-color: rgba(0,0,0,0.7);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            z-index: 1000; /* Ensure it's above map tiles */
+        }
+
+
         /* --- Animated Backgrounds --- */
         .background-container {
             position: fixed;
@@ -75,19 +140,49 @@
         }
 
         /* Sunny Animation */
-        .sun {
+        .sun-wrapper {
             position: absolute;
-            top: 8%;
-            right: 8%;
-            width: 120px;
-            height: 120px;
-            background: radial-gradient(circle, #FFFFA3 0%, #FFD700 40%, rgba(255,215,0,0) 70%);
-            border-radius: 50%;
-            animation: pulse 5s infinite ease-in-out;
+            top: 5%;
+            right: 5%;
+            width: 300px;
+            height: 300px;
+            filter: drop-shadow(0 0 20px rgba(255, 223, 0, 0.8));
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.5), 0 0 50px 30px rgba(255, 255, 0, 0.3); }
-            50% { transform: scale(1.1); box-shadow: 0 0 50px 25px rgba(255, 215, 0, 0.7), 0 0 80px 50px rgba(255, 255, 0, 0.5); }
+        .sun-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, #FFFAD4 0%, #FFD700 80%);
+            border-radius: 50%;
+            animation: sun-pulse 6s infinite ease-in-out;
+        }
+        .sun-rays {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%);
+            background: repeating-conic-gradient(
+                from 0deg, 
+                rgba(255, 255, 150, 0.6) 0deg 15deg, 
+                transparent 15deg 45deg
+            );
+            border-radius: 50%;
+            animation: spin-rays 40s linear infinite;
+            -webkit-mask-image: radial-gradient(circle, transparent 35%, black 36%);
+            mask-image: radial-gradient(circle, transparent 35%, black 36%);
+        }
+        @keyframes sun-pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+        @keyframes spin-rays {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
         /* Snow Animation */
@@ -134,12 +229,33 @@
             100% { transform: translateX(0); }
         }
 
+        /* Windy Animation */
+        .leaf {
+            position: absolute;
+            top: -50px;
+            width: 30px;
+            height: 20px;
+            background-color: #8B4513; /* SaddleBrown */
+            border-radius: 0 100% 0 100%;
+            animation: windy-leaves linear infinite;
+        }
+        .leaf.leaf-2 { background-color: #D2691E; /* Chocolate */ }
+        .leaf.leaf-3 { background-color: #A0522D; /* Sienna */ }
+        @keyframes windy-leaves {
+            0% { transform: translateX(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateX(110vw) rotate(720deg); opacity: 0; }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4">
 
     <!-- Background Containers -->
-    <div id="sunny-bg" class="background-container hidden"><div class="sun"></div></div>
+    <div id="sunny-bg" class="background-container hidden">
+        <div class="sun-wrapper">
+            <div class="sun-core"></div>
+            <div class="sun-rays"></div>
+        </div>
+    </div>
     <div id="rainy-bg" class="background-container hidden"></div>
     <div id="cloudy-bg" class="background-container hidden">
         <div class="cloud cloud-1"></div><div class="cloud cloud-2"></div><div class="cloud cloud-3"></div>
@@ -147,29 +263,47 @@
     <div id="snowy-bg" class="background-container hidden"></div>
     <div id="thunderstorm-bg" class="background-container hidden"><div class="lightning-flash"></div></div>
     <div id="foggy-bg" class="background-container hidden">
-        <div class="fog-layer fog-1"></div>
-        <div class="fog-layer fog-2"></div>
+        <div class="fog-layer fog-1"></div><div class="fog-layer fog-2"></div>
+    </div>
+    <div id="windy-bg" class="background-container hidden"></div>
+
+    <!-- 2D Map Modal -->
+    <div id="map-modal">
+        <div id="map-container"></div>
+        <div class="map-instructions">
+            <span>Click the map to select a location</span>
+        </div>
+        <div class="map-ui">
+            <button id="confirm-location-btn">Confirm Location</button>
+            <button id="close-map-btn">Close</button>
+        </div>
     </div>
 
+
     <div class="w-full max-w-md mx-auto z-10">
-        <div class="card rounded-2xl p-6 md:p-8 shadow-2xl">
+        <div class="card rounded-2xl p-6 md-p-8 shadow-2xl">
             <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold text-white">Rainfall Probability</h1>
-                <p class="text-blue-200 mt-2">Using NASA Historical Data</p>
+                <h1 class="text-3xl font-bold text-white">Historical Weather Probability</h1>
+                <p class="text-blue-200 mt-2">Using NASA POWER Data</p>
             </div>
 
             <!-- Input Form -->
             <div class="space-y-4">
                 <div>
                     <label for="place" class="block text-sm font-medium text-blue-100 mb-1">Location</label>
-                    <input type="text" id="place" placeholder="e.g., Kochi, India" class="w-full bg-gray-800 text-white border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <div class="flex gap-2 items-center">
+                        <input type="text" id="place" placeholder="e.g., Kochi, India" class="w-full bg-gray-800 text-white border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        <button id="select-on-map-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold p-3 rounded-lg" title="Select on Map">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label for="date" class="block text-sm font-medium text-blue-100 mb-1">Date for Prediction</label>
-                    <input type="date" id="date" class="w-full bg-gray-800 text-white border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <input type="text" id="date" class="w-full bg-gray-800 text-white border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Select a date...">
                 </div>
                 <button id="predictBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-lg">
-                    Get Rain Probability
+                    Get Weather Probability
                 </button>
             </div>
 
@@ -193,7 +327,8 @@
                     <!-- Probability -->
                     <h2 id="probability-text" class="text-6xl font-bold transition-colors duration-500"></h2>
                     <p id="probability-summary" class="text-xl mt-1 mb-2 transition-colors duration-500"></p>
-                    <p id="temperature-summary" class="text-lg mt-2 text-white"></p>
+                    <p id="temperature-summary" class="text-lg mt-1 text-white"></p>
+                    <p id="wind-summary" class="text-lg mt-1 text-white"></p>
                     <p id="prediction-for-date" class="text-blue-200 mb-4"></p>
 
                      <!-- Visualization -->
@@ -214,6 +349,7 @@
     </div>
 
     <script>
+        // --- Main App Elements ---
         const predictBtn = document.getElementById('predictBtn');
         const placeInput = document.getElementById('place');
         const dateInput = document.getElementById('date');
@@ -231,16 +367,32 @@
         const currentHumidityEl = document.getElementById('current-humidity');
         const currentWeatherStatusEl = document.getElementById('current-weather-status');
         
+        // --- Background Elements ---
         const sunnyBg = document.getElementById('sunny-bg');
         const rainyBg = document.getElementById('rainy-bg');
         const cloudyBg = document.getElementById('cloudy-bg');
         const snowyBg = document.getElementById('snowy-bg');
         const thunderstormBg = document.getElementById('thunderstorm-bg');
         const foggyBg = document.getElementById('foggy-bg');
+        const windyBg = document.getElementById('windy-bg');
 
+        // --- Map Elements ---
+        const mapModal = document.getElementById('map-modal');
+        const mapContainer = document.getElementById('map-container');
+        const selectOnMapBtn = document.getElementById('select-on-map-btn');
+        const confirmLocationBtn = document.getElementById('confirm-location-btn');
+        const closeMapBtn = document.getElementById('close-map-btn');
+        let map, marker;
+        let selectedCoords = null;
+        let mapInitialized = false;
 
-        dateInput.value = new Date().toISOString().split('T')[0];
+        // Initialize Flatpickr Calendar
+        flatpickr("#date", {
+            dateFormat: "Y-m-d",
+            defaultDate: "today",
+        });
 
+        // --- Main Prediction Logic ---
         predictBtn.addEventListener('click', async () => {
             const place = placeInput.value;
             const date = dateInput.value;
@@ -254,20 +406,20 @@
 
             try {
                 const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`;
-                const geoResponse = await fetch(geoUrl, { headers: { 'User-Agent': 'NASA Rain Predictor App/1.0' } });
-                if (!geoResponse.ok) throw new Error('Geocoding service is unavailable.');
+                const geoResponse = await fetch(geoUrl, { headers: { 'User-Agent': 'NASA Weather Predictor App/1.0' } });
+                if (!geoResponse.ok) throw new Error('Geocoding service (Nominatim) is unavailable.');
                 
                 const geoData = await geoResponse.json();
                 if (geoData.length === 0) throw new Error(`Could not find coordinates for "${place}". Please try a more specific location.`);
                 
                 const { lat, lon, display_name } = geoData[0];
-                
+
                 const fetchCurrentWeather = async () => {
                     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code`;
                     const response = await fetch(weatherUrl);
                     if (response.ok) displayCurrentWeather((await response.json()).current);
                 };
-                
+
                 await Promise.all([
                     fetchCurrentWeather(),
                     calculateAndDisplayProbability(lat, lon, date, display_name)
@@ -289,7 +441,7 @@
             let totalTempOnRainyDays = 0, tempOnRainyDaysCount = 0;
             let totalTempAllDays = 0, tempAllDaysCount = 0;
             let totalHumidity = 0, humidityDaysCount = 0;
-
+            let totalWindSpeed = 0, windDaysCount = 0;
             const promises = [];
 
             for (let i = 1; i <= N; i++) {
@@ -298,7 +450,7 @@
                 const pastDate = new Date(targetDate);
                 pastDate.setUTCFullYear(year);
                 const formattedDate = formatDateForApi(pastDate);
-                const parameters = "PRECTOTCORR,T2M,RH2M"; 
+                const parameters = "PRECTOTCORR,T2M,RH2M,WS10M"; 
                 const apiUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`;
                 promises.push(fetch(apiUrl).then(res => res.ok ? res.json() : null));
             }
@@ -310,20 +462,14 @@
                     const precipData = data.properties.parameter.PRECTOTCORR;
                     const tempData = data.properties.parameter.T2M;
                     const humidityData = data.properties.parameter.RH2M;
+                    const windData = data.properties.parameter.WS10M;
                     const dateKey = Object.keys(precipData)[0];
 
                     if (dateKey && precipData[dateKey] > -999) {
                         validYears++;
-                        
-                        if (tempData[dateKey] > -999) {
-                            totalTempAllDays += tempData[dateKey];
-                            tempAllDaysCount++;
-                        }
-                        if (humidityData[dateKey] > -999) {
-                            totalHumidity += humidityData[dateKey];
-                            humidityDaysCount++;
-                        }
-
+                        if (tempData[dateKey] > -999) { totalTempAllDays += tempData[dateKey]; tempAllDaysCount++; }
+                        if (humidityData[dateKey] > -999) { totalHumidity += humidityData[dateKey]; humidityDaysCount++; }
+                        if (windData[dateKey] > -999) { totalWindSpeed += windData[dateKey]; windDaysCount++; }
                         if (precipData[dateKey] > 0.5) {
                              rainyDaysCount++;
                              if(tempData[dateKey] > -999) {
@@ -341,73 +487,74 @@
             const avgTempOnRainyDays = tempOnRainyDaysCount > 0 ? totalTempOnRainyDays / tempOnRainyDaysCount : 10;
             const avgTempAllDays = tempAllDaysCount > 0 ? totalTempAllDays / tempAllDaysCount : 15;
             const avgHumidity = humidityDaysCount > 0 ? totalHumidity / humidityDaysCount : 50;
+            const avgWindSpeed = windDaysCount > 0 ? totalWindSpeed / windDaysCount : 0;
 
-            displayProbability(probability, dateString, validYears, locationName, avgTempOnRainyDays, avgTempAllDays, avgHumidity);
+            displayProbability(probability, dateString, validYears, locationName, avgTempOnRainyDays, avgTempAllDays, avgHumidity, avgWindSpeed);
         }
 
-        function displayProbability(probability, dateString, yearsOfData, locationName, avgTempRainy, avgTempAll, avgHumidity) {
+        function displayProbability(probability, dateString, yearsOfData, locationName, avgTempRainy, avgTempAll, avgHumidity, avgWindSpeed) {
             const probabilityTextEl = document.getElementById('probability-text');
             const probabilitySummaryEl = document.getElementById('probability-summary');
             const probabilityBarEl = document.getElementById('probability-bar');
             const temperatureSummaryEl = document.getElementById('temperature-summary');
+            const windSummaryEl = document.getElementById('wind-summary');
 
             probabilityTextEl.textContent = `${probability}%`;
             predictionForDateEl.textContent = `for ${formatDateForDisplay(dateString)}`;
-            locationInfo.textContent = `Based on ${yearsOfData} years of data for ${locationName.split(',')[0]}`;
+            locationInfo.textContent = `Based on ${yearsOfData} years of data for ${locationName}`;
 
             let summary, barColorClass, textColorClass;
             resetBackgrounds();
 
-            // Set Temperature Message
+            temperatureSummaryEl.textContent = "";
+            windSummaryEl.textContent = "";
             if(avgTempAll > 35) {
                 temperatureSummaryEl.textContent = "Historically Hot";
-                temperatureSummaryEl.className = 'text-lg mt-2 text-orange-300';
+                temperatureSummaryEl.className = 'text-lg mt-1 text-orange-300';
             } else if (avgTempAll < 5) {
                 temperatureSummaryEl.textContent = "Historically Cold";
-                temperatureSummaryEl.className = 'text-lg mt-2 text-cyan-300';
-            } else {
-                 temperatureSummaryEl.textContent = "";
+                temperatureSummaryEl.className = 'text-lg mt-1 text-cyan-300';
+            }
+             if (avgWindSpeed > 5) {
+                windSummaryEl.textContent = "Historically Windy";
+                windSummaryEl.className = 'text-lg mt-1 text-gray-300';
             }
 
-            if (probability <= 30) {
+            if (avgWindSpeed > 5) {
+                 summary = `Windy with a ${probability > 50 ? 'High' : 'Low'} Chance of Rain`;
+                 barColorClass = "bg-gray-400"; textColorClass = "text-gray-300";
+                 windyBg.classList.remove('hidden'); createWindyLeaves();
+                 bodyEl.className = 'bg-gradient-to-br from-teal-700 to-gray-800 min-h-screen flex items-center justify-center p-4';
+            } else if (probability <= 30) {
                 summary = "Low Chance of Precipitation";
-                barColorClass = "bg-green-500";
-                textColorClass = "text-green-400";
+                barColorClass = "bg-green-500"; textColorClass = "text-green-400";
                 sunnyBg.classList.remove('hidden');
                 bodyEl.className = 'bg-gradient-to-br from-sky-400 to-blue-600 min-h-screen flex items-center justify-center p-4';
             } else if (probability <= 60 && avgHumidity > 95) {
                 summary = "High Chance of Fog";
-                barColorClass = "bg-gray-400";
-                textColorClass = "text-gray-300";
+                barColorClass = "bg-gray-400"; textColorClass = "text-gray-300";
                 foggyBg.classList.remove('hidden');
                 bodyEl.className = 'bg-gradient-to-br from-slate-500 to-gray-600 min-h-screen flex items-center justify-center p-4';
             } else if (probability <= 60) {
                 summary = "Moderate Chance of Precipitation";
-                barColorClass = "bg-yellow-500";
-                textColorClass = "text-yellow-400";
+                barColorClass = "bg-yellow-500"; textColorClass = "text-yellow-400";
                 cloudyBg.classList.remove('hidden');
                 bodyEl.className = 'bg-gradient-to-br from-slate-600 to-gray-700 min-h-screen flex items-center justify-center p-4';
-            } else { // High probability
+            } else {
                 if (avgTempRainy <= 2) {
                     summary = "High Chance of Snow";
-                    barColorClass = "bg-sky-300";
-                    textColorClass = "text-sky-200";
-                    snowyBg.classList.remove('hidden');
-                    createSnow();
+                    barColorClass = "bg-sky-300"; textColorClass = "text-sky-200";
+                    snowyBg.classList.remove('hidden'); createSnow();
                     bodyEl.className = 'bg-gradient-to-br from-slate-400 to-gray-600 min-h-screen flex items-center justify-center p-4';
                 } else if (probability > 85) {
                     summary = "High Chance of Heavy Rain / Storm";
-                    barColorClass = "bg-purple-500";
-                    textColorClass = "text-purple-300";
-                    thunderstormBg.classList.remove('hidden');
-                    createThunderstorm();
+                    barColorClass = "bg-purple-500"; textColorClass = "text-purple-300";
+                    thunderstormBg.classList.remove('hidden'); createThunderstorm();
                     bodyEl.className = 'bg-gradient-to-br from-gray-900 to-indigo-900 min-h-screen flex items-center justify-center p-4';
                 } else {
                     summary = "High Chance of Rain";
-                    barColorClass = "bg-red-500";
-                    textColorClass = "text-red-400";
-                    rainyBg.classList.remove('hidden');
-                    createRain();
+                    barColorClass = "bg-red-500"; textColorClass = "text-red-400";
+                    rainyBg.classList.remove('hidden'); createRain();
                     bodyEl.className = 'bg-gradient-to-br from-gray-800 to-slate-900 min-h-screen flex items-center justify-center p-4';
                 }
             }
@@ -419,6 +566,7 @@
             probabilitySummaryEl.className = `text-xl mt-1 mb-2 transition-colors duration-500 ${textColorClass}`;
         }
         
+        // --- UI & Helper Functions ---
         function createRain(density = 50) {
             rainyBg.innerHTML = '';
             for (let i = 0; i < density; i++) {
@@ -431,7 +579,6 @@
             }
         }
         function createThunderstorm() { createRain(100); }
-
         function createSnow() {
             snowyBg.innerHTML = '';
             for (let i = 0; i < 50; i++) {
@@ -444,39 +591,43 @@
                 snowyBg.appendChild(flake);
             }
         }
-        
-        function resetBackgrounds() {
-            [sunnyBg, rainyBg, cloudyBg, snowyBg, thunderstormBg, foggyBg].forEach(bg => bg.classList.add('hidden'));
-            rainyBg.innerHTML = '';
-            snowyBg.innerHTML = '';
+        function createWindyLeaves() {
+            windyBg.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const leaf = document.createElement('div');
+                const leafType = Math.ceil(Math.random() * 3);
+                leaf.className = `leaf leaf-${leafType}`;
+                leaf.style.left = `${-50 + Math.random() * 50}px`;
+                leaf.style.top = `${Math.random() * 100}vh`;
+                leaf.style.animationDuration = `${5 + Math.random() * 5}s`;
+                leaf.style.animationDelay = `${Math.random() * 5}s`;
+                windyBg.appendChild(leaf);
+            }
         }
-
+        function resetBackgrounds() {
+            [sunnyBg, rainyBg, cloudyBg, snowyBg, thunderstormBg, foggyBg, windyBg].forEach(bg => bg.classList.add('hidden'));
+            rainyBg.innerHTML = ''; snowyBg.innerHTML = ''; windyBg.innerHTML = '';
+        }
         function formatDateForApi(date) {
             const year = date.getUTCFullYear();
             const month = String(date.getUTCMonth() + 1).padStart(2, '0');
             const day = String(date.getUTCDate()).padStart(2, '0');
             return `${year}${month}${day}`;
         }
-
         function formatDateForDisplay(dateString) {
             const [year, month, day] = dateString.split('-');
             return `${day}-${month}-${year}`;
         }
-
         function displayCurrentWeather(current) {
             if(!current) return;
             currentTempEl.textContent = `${Math.round(current.temperature_2m)}°C`;
             currentHumidityEl.textContent = `${current.relative_humidity_2m}%`;
             currentWeatherStatusEl.textContent = getWeatherDescription(current.weather_code);
         }
-        
         function getWeatherDescription(code) {
-             const descriptions = {
-                0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Rime Fog',51:'Light Drizzle',53:'Drizzle',55:'Dense Drizzle',56:'Freezing Drizzle',57:'Dense Freezing Drizzle',61:'Slight Rain',63:'Rain',65:'Heavy Rain',66:'Freezing Rain',67:'Heavy Freezing Drivvle',71:'Slight Snow',73:'Snow',75:'Heavy Snow',77:'Snow Grains',80:'Slight Showers',81:'Showers',82:'Violent Showers',85:'Snow Showers',86:'Heavy Snow Showers',95:'Thunderstorm',96:'Thunderstorm & Hail',99:'Thunderstorm & Hail'
-            };
+             const descriptions = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Rime Fog',51:'Light Drizzle',53:'Drizzle',55:'Dense Drizzle',56:'Freezing Drizzle',57:'Dense Freezing Drizzle',61:'Slight Rain',63:'Rain',65:'Heavy Rain',66:'Freezing Rain',67:'Heavy Freezing Drivvle',71:'Slight Snow',73:'Snow',75:'Heavy Snow',77:'Snow Grains',80:'Slight Showers',81:'Showers',82:'Violent Showers',85:'Snow Showers',86:'Heavy Snow Showers',95:'Thunderstorm',96:'Thunderstorm & Hail',99:'Thunderstorm & Hail'};
             return descriptions[code] || 'Unknown';
         }
-
         function showError(message) {
             errorText.textContent = message;
             resultContainer.classList.remove('hidden');
@@ -486,6 +637,66 @@
             resetBackgrounds();
             bodyEl.className = 'bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4';
         }
+        
+        // --- Map Logic (Leaflet.js) ---
+        function initLeafletMap() {
+            if (mapInitialized) return;
+            map = L.map('map-container').setView([20, 0], 2);
+            // Switched to a tile layer with English labels
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            map.on('click', function(e) {
+                selectedCoords = e.latlng;
+                if (!marker) {
+                    marker = L.marker(selectedCoords).addTo(map);
+                } else {
+                    marker.setLatLng(selectedCoords);
+                }
+            });
+            mapInitialized = true;
+        }
+        
+        // --- Map UI Event Listeners ---
+        selectOnMapBtn.addEventListener('click', () => {
+            mapModal.classList.add('visible');
+            initLeafletMap();
+            // Invalidate size to ensure map tiles render correctly after modal becomes visible
+            setTimeout(() => { map.invalidateSize() }, 10);
+        });
+        
+        closeMapBtn.addEventListener('click', () => {
+            mapModal.classList.remove('visible');
+        });
+
+        confirmLocationBtn.addEventListener('click', async () => {
+            if (!selectedCoords) {
+                alert("Please click a location on the map first.");
+                return;
+            }
+
+            const { lat, lng } = selectedCoords;
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+            
+            try {
+                const response = await fetch(url, { headers: { 'User-Agent': 'NASA Weather Predictor App/1.0' } });
+                const data = await response.json();
+                if (data && data.display_name) {
+                    placeInput.value = data.display_name;
+                } else {
+                    placeInput.value = `Lat: ${lat.toFixed(2)}, Lon: ${lng.toFixed(2)}`;
+                }
+            } catch (err) {
+                placeInput.value = `Lat: ${lat.toFixed(2)}, Lon: ${lng.toFixed(2)}`;
+                console.warn(`Reverse geocoding failed: ${err}`);
+            }
+            
+            mapModal.classList.remove('visible');
+        });
+
     </script>
 </body>
 </html>
