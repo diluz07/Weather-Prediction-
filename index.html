@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Tone.js for Sound Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -23,6 +25,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
         }
         .loader {
             border-top-color: #3498db;
@@ -129,6 +132,11 @@
             background: rgba(255, 255, 255, 0.15);
             border-radius: 50%;
         }
+        .cloud.dark-cloud, 
+        .cloud.dark-cloud::before, 
+        .cloud.dark-cloud::after {
+            background: rgba(40, 45, 50, 0.6);
+        }
         .cloud::before { width: 100px; height: 100px; top: -50px; left: 40px; }
         .cloud::after { width: 60px; height: 60px; top: -30px; right: 40px; }
         .cloud-1 { top: 10%; animation: drift 25s linear infinite; }
@@ -196,6 +204,16 @@
             opacity: 0.8;
             animation: snowfall linear infinite;
         }
+        .blowing-flake {
+            position: absolute;
+            top: -10px;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: windy-snow linear infinite;
+        }
         @keyframes snowfall {
             to { transform: translateY(110vh) translateX(30px); opacity: 0; }
         }
@@ -207,10 +225,36 @@
             background: rgba(200, 200, 255, 0.5);
             opacity: 0;
             animation: lightning 7s infinite;
+            z-index: 1;
         }
         @keyframes lightning {
             0%, 90% { opacity: 0; } 91% { opacity: 0.8; } 92% { opacity: 0; }
             93% { opacity: 0.6; } 94% { opacity: 0; } 100% { opacity: 0; }
+        }
+        .lightning-bolt {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            width: 150px;
+            height: 400px;
+            opacity: 0;
+            animation: strike 7s infinite ease-out;
+            transform-origin: top center;
+            z-index: 2;
+        }
+        .lightning-bolt svg {
+            width: 100%;
+            height: 100%;
+            fill: rgba(255, 255, 255, 0.9);
+            filter: drop-shadow(0 0 15px white);
+        }
+        @keyframes strike {
+            0%, 90.9% { opacity: 0; transform: scaleY(0); }
+            91% { opacity: 1; transform: scaleY(1); }
+            91.2% { opacity: 0; transform: scaleY(1); }
+            91.4% { opacity: 1; transform: scaleY(1); }
+            92% { opacity: 0; transform: scaleY(0); }
+            100% { opacity: 0; transform: scaleY(0); }
         }
         
         /* Fog Animation */
@@ -245,6 +289,10 @@
             0% { transform: translateX(0) rotate(0deg); opacity: 1; }
             100% { transform: translateX(110vw) rotate(720deg); opacity: 0; }
         }
+        @keyframes windy-snow {
+            0% { transform: translateX(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateX(110vw) rotate(720deg); opacity: 0; }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4">
@@ -261,7 +309,7 @@
         <div class="cloud cloud-1"></div><div class="cloud cloud-2"></div><div class="cloud cloud-3"></div>
     </div>
     <div id="snowy-bg" class="background-container hidden"></div>
-    <div id="thunderstorm-bg" class="background-container hidden"><div class="lightning-flash"></div></div>
+    <div id="thunderstorm-bg" class="background-container hidden"></div>
     <div id="foggy-bg" class="background-container hidden">
         <div class="fog-layer fog-1"></div><div class="fog-layer fog-2"></div>
     </div>
@@ -281,7 +329,14 @@
 
 
     <div class="w-full max-w-md mx-auto z-10">
-        <div class="card rounded-2xl p-6 md-p-8 shadow-2xl">
+        <div class="card rounded-2xl p-6 md:p-8 shadow-2xl">
+             <button id="mute-btn" class="absolute top-4 right-4 text-white opacity-50 hover:opacity-100 transition-opacity">
+                <!-- Muted Icon -->
+                <svg id="sound-off-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                <!-- Unmuted Icon -->
+                <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+
             <div class="text-center mb-6">
                 <h1 class="text-3xl font-bold text-white">Historical Weather Probability</h1>
                 <p class="text-blue-200 mt-2">Using NASA POWER Data</p>
@@ -386,11 +441,120 @@
         let selectedCoords = null;
         let mapInitialized = false;
 
+        // --- Sound Elements ---
+        const muteBtn = document.getElementById('mute-btn');
+        const soundOnIcon = document.getElementById('sound-on-icon');
+        const soundOffIcon = document.getElementById('sound-off-icon');
+        let isMuted = true;
+        let audioInitialized = false;
+        const sounds = {};
+
         // Initialize Flatpickr Calendar
         flatpickr("#date", {
             dateFormat: "Y-m-d",
             defaultDate: "today",
         });
+
+        // --- Sound Logic ---
+        function initSounds() {
+            if (audioInitialized) return;
+
+            // Rain Sound
+            const rainFilter = new Tone.Filter(600, "lowpass").toDestination();
+            sounds.rain = new Tone.Noise("pink").connect(rainFilter).set({ volume: -18 });
+            
+            // Thunder Sound
+            const thunderVolume = new Tone.Volume(-6).toDestination();
+            const thunderSynth = new Tone.MembraneSynth({
+                pitchDecay: 0.05,
+                octaves: 10,
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 2.5, attackCurve: "exponential" }
+            }).connect(thunderVolume);
+            sounds.thunder = new Tone.Loop(time => {
+                thunderSynth.triggerAttackRelease("C1", "2s", time);
+            }, "8s").set({ probability: 0.3 });
+
+            // Sunny Sound
+            sounds.sunny = new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: { attack: 2, decay: 1, sustain: 0.8, release: 2 }
+            }).toDestination().set({ volume: -26 });
+
+            // Snowy Sound
+            const snowFilter = new Tone.Filter(800, "lowpass").toDestination();
+            sounds.snow = new Tone.Noise("pink").connect(snowFilter).set({ volume: -35 });
+
+            // Windy Sound
+            const windFilter = new Tone.AutoFilter("4n").toDestination().set({ baseFrequency: 200, octaves: 4 });
+            sounds.wind = new Tone.Noise("brown").connect(windFilter).set({ volume: -20 });
+            
+            // Fog/Cloudy Sound
+            sounds.fog = new Tone.AMSynth({
+                harmonicity: 1.2,
+                envelope: { attack: 1, release: 1 },
+                oscillator: { type: 'sine' },
+                modulation: { type: 'square' }
+            }).toDestination().set({ volume: -32 });
+
+            Tone.Transport.start();
+            audioInitialized = true;
+        }
+
+        function stopAllSounds() {
+            if (!audioInitialized) return;
+            Object.values(sounds).forEach(sound => {
+                if (sound instanceof Tone.Loop && sound.state === "started") {
+                    sound.stop(0);
+                } else if (sound instanceof Tone.Noise && sound.state === "started") {
+                    sound.stop(0);
+                } else if (sound.name === "Synth" || sound.name === "AMSynth") {
+                    sound.triggerRelease();
+                }
+            });
+        }
+
+        function playWeatherSound(weatherType) {
+            if (!audioInitialized || isMuted) return;
+            stopAllSounds();
+
+            switch (weatherType) {
+                case 'rainy':
+                    sounds.rain.start();
+                    break;
+                case 'thunderstorm':
+                    sounds.rain.start();
+                    sounds.thunder.start(0);
+                    break;
+                case 'sunny':
+                    sounds.sunny.triggerAttack("C4");
+                    break;
+                case 'snowy':
+                    sounds.snow.start();
+                    break;
+                case 'windy-snow':
+                    sounds.wind.start();
+                    sounds.snow.start();
+                    break;
+                case 'windy':
+                    sounds.wind.start();
+                    break;
+                case 'foggy':
+                case 'cloudy':
+                    sounds.fog.triggerAttack("A1");
+                    break;
+            }
+        }
+
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            soundOnIcon.classList.toggle('hidden', isMuted);
+            soundOffIcon.classList.toggle('hidden', !isMuted);
+            if (isMuted) {
+                stopAllSounds();
+            }
+        });
+
 
         // --- Main Prediction Logic ---
         predictBtn.addEventListener('click', async () => {
@@ -398,6 +562,11 @@
             const date = dateInput.value;
 
             if (!place || !date) { showError("Please provide a location and a date."); return; }
+            
+            if (!audioInitialized) {
+                await Tone.start();
+                initSounds();
+            }
 
             resultContainer.classList.remove('hidden');
             predictionOutput.classList.add('hidden');
@@ -454,10 +623,14 @@
                 const apiUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`;
                 promises.push(fetch(apiUrl).then(res => res.ok ? res.json() : null));
             }
+            
+            const settledResults = await Promise.allSettled(promises);
+            const successfulResults = settledResults
+                .filter(result => result.status === 'fulfilled' && result.value)
+                .map(result => result.value);
 
-            const results = await Promise.all(promises);
             let validYears = 0;
-            results.forEach(data => {
+            successfulResults.forEach(data => {
                 if (data && data.properties?.parameter?.PRECTOTCORR) {
                     const precipData = data.properties.parameter.PRECTOTCORR;
                     const tempData = data.properties.parameter.T2M;
@@ -481,7 +654,7 @@
                 }
             });
 
-            if (validYears === 0) throw new Error("Could not retrieve any historical data for this date.");
+            if (validYears === 0) throw new Error("Could not retrieve any historical data for this date. The NASA API might be temporarily busy or unavailable.");
             
             const probability = Math.round((rainyDaysCount / validYears) * 100);
             const avgTempOnRainyDays = tempOnRainyDaysCount > 0 ? totalTempOnRainyDays / tempOnRainyDaysCount : 10;
@@ -503,7 +676,7 @@
             predictionForDateEl.textContent = `for ${formatDateForDisplay(dateString)}`;
             locationInfo.textContent = `Based on ${yearsOfData} years of data for ${locationName}`;
 
-            let summary, barColorClass, textColorClass;
+            let summary, barColorClass, textColorClass, weatherSound;
             resetBackgrounds();
 
             temperatureSummaryEl.textContent = "";
@@ -520,44 +693,60 @@
                 windSummaryEl.className = 'text-lg mt-1 text-gray-300';
             }
 
-            if (avgWindSpeed > 5) {
-                 summary = `Windy with a ${probability > 50 ? 'High' : 'Low'} Chance of Rain`;
-                 barColorClass = "bg-gray-400"; textColorClass = "text-gray-300";
-                 windyBg.classList.remove('hidden'); createWindyLeaves();
-                 bodyEl.className = 'bg-gradient-to-br from-teal-700 to-gray-800 min-h-screen flex items-center justify-center p-4';
+            if (avgWindSpeed > 5 && avgTempAll <= 0) {
+                summary = "Blowing Snow";
+                barColorClass = "bg-sky-400";
+                textColorClass = "text-sky-300";
+                windyBg.classList.remove('hidden');
+                createBlowingSnow(); 
+                weatherSound = 'windy-snow';
+                bodyEl.className = 'bg-gradient-to-br from-slate-600 to-gray-800 min-h-screen flex items-center justify-center p-4';
+            } else if (avgWindSpeed > 5) {
+                summary = `Windy with a ${probability > 50 ? 'High' : 'Low'} Chance of Rain`;
+                barColorClass = "bg-gray-400"; textColorClass = "text-gray-300";
+                windyBg.classList.remove('hidden'); createWindyLeaves();
+                weatherSound = 'windy';
+                bodyEl.className = 'bg-gradient-to-br from-teal-700 to-gray-800 min-h-screen flex items-center justify-center p-4';
             } else if (probability <= 30) {
                 summary = "Low Chance of Precipitation";
                 barColorClass = "bg-green-500"; textColorClass = "text-green-400";
                 sunnyBg.classList.remove('hidden');
+                weatherSound = 'sunny';
                 bodyEl.className = 'bg-gradient-to-br from-sky-400 to-blue-600 min-h-screen flex items-center justify-center p-4';
             } else if (probability <= 60 && avgHumidity > 95) {
                 summary = "High Chance of Fog";
                 barColorClass = "bg-gray-400"; textColorClass = "text-gray-300";
                 foggyBg.classList.remove('hidden');
+                weatherSound = 'foggy';
                 bodyEl.className = 'bg-gradient-to-br from-slate-500 to-gray-600 min-h-screen flex items-center justify-center p-4';
             } else if (probability <= 60) {
                 summary = "Moderate Chance of Precipitation";
                 barColorClass = "bg-yellow-500"; textColorClass = "text-yellow-400";
                 cloudyBg.classList.remove('hidden');
+                weatherSound = 'cloudy';
                 bodyEl.className = 'bg-gradient-to-br from-slate-600 to-gray-700 min-h-screen flex items-center justify-center p-4';
             } else {
                 if (avgTempRainy <= 2) {
                     summary = "High Chance of Snow";
                     barColorClass = "bg-sky-300"; textColorClass = "text-sky-200";
                     snowyBg.classList.remove('hidden'); createSnow();
+                    weatherSound = 'snowy';
                     bodyEl.className = 'bg-gradient-to-br from-slate-400 to-gray-600 min-h-screen flex items-center justify-center p-4';
                 } else if (probability > 85) {
                     summary = "High Chance of Heavy Rain / Storm";
                     barColorClass = "bg-purple-500"; textColorClass = "text-purple-300";
                     thunderstormBg.classList.remove('hidden'); createThunderstorm();
+                    weatherSound = 'thunderstorm';
                     bodyEl.className = 'bg-gradient-to-br from-gray-900 to-indigo-900 min-h-screen flex items-center justify-center p-4';
                 } else {
                     summary = "High Chance of Rain";
                     barColorClass = "bg-red-500"; textColorClass = "text-red-400";
                     rainyBg.classList.remove('hidden'); createRain();
+                    weatherSound = 'rainy';
                     bodyEl.className = 'bg-gradient-to-br from-gray-800 to-slate-900 min-h-screen flex items-center justify-center p-4';
                 }
             }
+            playWeatherSound(weatherSound);
 
             probabilitySummaryEl.textContent = summary;
             setTimeout(() => { probabilityBarEl.style.width = `${probability}%`; }, 10);
@@ -578,7 +767,24 @@
                 rainyBg.appendChild(drop);
             }
         }
-        function createThunderstorm() { createRain(100); }
+        function createThunderstorm() {
+            createRain(100);
+            thunderstormBg.innerHTML = `
+                <div class="lightning-flash"></div>
+                <div class="cloud dark-cloud cloud-1"></div>
+                <div class="cloud dark-cloud cloud-2"></div>
+                <div class="cloud dark-cloud cloud-3"></div>
+            `;
+
+            for (let i = 0; i < 3; i++) {
+                const bolt = document.createElement('div');
+                bolt.className = 'lightning-bolt';
+                bolt.innerHTML = `<svg viewBox="0 0 512 512"><path d="M416 21.125a15.996 15.996 0 00-15.031 10.969L262.25 240H352a16 16 0 0113.5 25.156l-192 224a16.002 16.002 0 01-27-18.313L286.469 272H192a16.002 16.002 0 01-13.5-25.156l192-224A15.99 15.99 0 01416 21.125z"/></svg>`;
+                bolt.style.left = `${10 + Math.random() * 80}%`;
+                bolt.style.animationDelay = `${Math.random() * 4}s`;
+                thunderstormBg.appendChild(bolt);
+            }
+        }
         function createSnow() {
             snowyBg.innerHTML = '';
             for (let i = 0; i < 50; i++) {
@@ -604,9 +810,24 @@
                 windyBg.appendChild(leaf);
             }
         }
+        function createBlowingSnow() {
+            windyBg.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'blowing-flake';
+                flake.style.left = `${-50 + Math.random() * 50}px`;
+                flake.style.top = `${Math.random() * 100}vh`;
+                flake.style.animationDuration = `${3 + Math.random() * 4}s`;
+                flake.style.animationDelay = `${Math.random() * 5}s`;
+                windyBg.appendChild(flake);
+            }
+        }
         function resetBackgrounds() {
             [sunnyBg, rainyBg, cloudyBg, snowyBg, thunderstormBg, foggyBg, windyBg].forEach(bg => bg.classList.add('hidden'));
-            rainyBg.innerHTML = ''; snowyBg.innerHTML = ''; windyBg.innerHTML = '';
+            rainyBg.innerHTML = ''; 
+            snowyBg.innerHTML = ''; 
+            windyBg.innerHTML = '';
+            thunderstormBg.innerHTML = '';
         }
         function formatDateForApi(date) {
             const year = date.getUTCFullYear();
@@ -635,18 +856,30 @@
             predictionOutput.classList.add('hidden');
             errorMessage.classList.remove('hidden');
             resetBackgrounds();
+            stopAllSounds();
             bodyEl.className = 'bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4';
         }
         
         // --- Map Logic (Leaflet.js) ---
         function initLeafletMap() {
             if (mapInitialized) return;
-            map = L.map('map-container').setView([20, 0], 2);
+            map = L.map('map-container', {
+                worldCopyJump: false,
+                minZoom: 2
+            }).setView([20, 0], 2);
+            
+            const southWest = L.latLng(-85, -180);
+            const northEast = L.latLng(85, 180);
+            const bounds = L.latLngBounds(southWest, northEast);
+
+            map.setMaxBounds(bounds);
+            
             // Switched to a tile layer with English labels
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
-                maxZoom: 20
+                maxZoom: 20,
+                noWrap: true
             }).addTo(map);
 
             map.on('click', function(e) {
@@ -700,4 +933,5 @@
     </script>
 </body>
 </html>
+
 
