@@ -45,17 +45,13 @@
             background: linear-gradient(to top, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 100%);
             animation: fall linear infinite;
         }
-
         @keyframes fall {
-            to {
-                transform: translateY(120vh);
-            }
+            to { transform: translateY(120vh); }
         }
 
         /* Cloud Animation */
         .cloud {
             position: absolute;
-            top: 50%;
             width: 200px;
             height: 60px;
             background: rgba(255, 255, 255, 0.15);
@@ -68,22 +64,11 @@
             background: rgba(255, 255, 255, 0.15);
             border-radius: 50%;
         }
-        .cloud::before {
-            width: 100px;
-            height: 100px;
-            top: -50px;
-            left: 40px;
-        }
-        .cloud::after {
-            width: 60px;
-            height: 60px;
-            top: -30px;
-            right: 40px;
-        }
-        .cloud-1 { top: 10%; left: -250px; transform: scale(0.8); }
-        .cloud-2 { top: 25%; left: -250px; transform: scale(0.6); }
-        .cloud-3 { top: 60%; left: -250px; transform: scale(0.9); }
-
+        .cloud::before { width: 100px; height: 100px; top: -50px; left: 40px; }
+        .cloud::after { width: 60px; height: 60px; top: -30px; right: 40px; }
+        .cloud-1 { top: 10%; animation: drift 25s linear infinite; }
+        .cloud-2 { top: 25%; animation: drift 35s linear infinite 5s; }
+        .cloud-3 { top: 60%; animation: drift 30s linear infinite 2s; }
         @keyframes drift {
             from { transform: translateX(-250px); }
             to { transform: translateX(110vw); }
@@ -100,17 +85,55 @@
             border-radius: 50%;
             animation: pulse 5s infinite ease-in-out;
         }
-
         @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.5), 0 0 50px 30px rgba(255, 255, 0, 0.3);
-            }
-            50% {
-                transform: scale(1.1);
-                box-shadow: 0 0 50px 25px rgba(255, 215, 0, 0.7), 0 0 80px 50px rgba(255, 255, 0, 0.5);
-            }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.5), 0 0 50px 30px rgba(255, 255, 0, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 0 50px 25px rgba(255, 215, 0, 0.7), 0 0 80px 50px rgba(255, 255, 0, 0.5); }
         }
+
+        /* Snow Animation */
+        .snow-flake {
+            position: absolute;
+            top: -10px;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: snowfall linear infinite;
+        }
+        @keyframes snowfall {
+            to { transform: translateY(110vh) translateX(30px); opacity: 0; }
+        }
+
+        /* Thunderstorm Animation */
+        .lightning-flash {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(200, 200, 255, 0.5);
+            opacity: 0;
+            animation: lightning 7s infinite;
+        }
+        @keyframes lightning {
+            0%, 90% { opacity: 0; } 91% { opacity: 0.8; } 92% { opacity: 0; }
+            93% { opacity: 0.6; } 94% { opacity: 0; } 100% { opacity: 0; }
+        }
+        
+        /* Fog Animation */
+        .fog-layer {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPoAAAD6CAYAAACI7Fo9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAF/SURBVHhe7dJBDQAgDAAx/6ms4Q5ONJsAz+4CmJ4H0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzID0P0vMgPQ/S8yA9D9LzIC0p2JV4s/s+x3TAAAAAElFTkSuQmCC') repeat-x;
+            background-size: contain;
+            opacity: 0.3;
+        }
+        .fog-layer.fog-1 { animation: fog-drift 60s linear infinite; }
+        .fog-layer.fog-2 { animation: fog-drift 45s linear infinite reverse; }
+        @keyframes fog-drift {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex items-center justify-center p-4">
@@ -119,9 +142,13 @@
     <div id="sunny-bg" class="background-container hidden"><div class="sun"></div></div>
     <div id="rainy-bg" class="background-container hidden"></div>
     <div id="cloudy-bg" class="background-container hidden">
-        <div class="cloud cloud-1"></div>
-        <div class="cloud cloud-2"></div>
-        <div class="cloud cloud-3"></div>
+        <div class="cloud cloud-1"></div><div class="cloud cloud-2"></div><div class="cloud cloud-3"></div>
+    </div>
+    <div id="snowy-bg" class="background-container hidden"></div>
+    <div id="thunderstorm-bg" class="background-container hidden"><div class="lightning-flash"></div></div>
+    <div id="foggy-bg" class="background-container hidden">
+        <div class="fog-layer fog-1"></div>
+        <div class="fog-layer fog-2"></div>
     </div>
 
     <div class="w-full max-w-md mx-auto z-10">
@@ -157,24 +184,16 @@
                     <div class="mb-6 p-4 bg-gray-800/50 rounded-lg">
                         <h3 class="text-xl font-bold text-white mb-2">Current Conditions</h3>
                         <div class="grid grid-cols-3 gap-2 text-center">
-                             <div>
-                                <p class="text-sm text-blue-200">Now</p>
-                                <p id="current-weather-status" class="font-bold text-white text-lg">-</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-blue-200">Temp</p>
-                                <p id="current-temp" class="font-bold text-white text-lg">-</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-blue-200">Humidity</p>
-                                <p id="current-humidity" class="font-bold text-white text-lg">-</p>
-                            </div>
+                             <div><p class="text-sm text-blue-200">Now</p><p id="current-weather-status" class="font-bold text-white text-lg">-</p></div>
+                            <div><p class="text-sm text-blue-200">Temp</p><p id="current-temp" class="font-bold text-white text-lg">-</p></div>
+                            <div><p class="text-sm text-blue-200">Humidity</p><p id="current-humidity" class="font-bold text-white text-lg">-</p></div>
                         </div>
                     </div>
                     
                     <!-- Probability -->
                     <h2 id="probability-text" class="text-6xl font-bold transition-colors duration-500"></h2>
                     <p id="probability-summary" class="text-xl mt-1 mb-2 transition-colors duration-500"></p>
+                    <p id="temperature-summary" class="text-lg mt-2 text-white"></p>
                     <p id="prediction-for-date" class="text-blue-200 mb-4"></p>
 
                      <!-- Visualization -->
@@ -185,9 +204,7 @@
                 </div>
 
                 <!-- Error Message -->
-                <div id="error-message" class="hidden p-4 bg-red-900/50 text-red-200 rounded-lg">
-                    <p id="error-text"></p>
-                </div>
+                <div id="error-message" class="hidden p-4 bg-red-900/50 text-red-200 rounded-lg"><p id="error-text"></p></div>
             </div>
 
             <p class="text-center text-xs text-gray-400 mt-6">
@@ -207,7 +224,6 @@
         const predictionOutput = document.getElementById('prediction-output');
         const errorMessage = document.getElementById('error-message');
         
-        // Result display elements
         const predictionForDateEl = document.getElementById('prediction-for-date');
         const locationInfo = document.getElementById('location-info');
         const errorText = document.getElementById('error-text');
@@ -215,22 +231,21 @@
         const currentHumidityEl = document.getElementById('current-humidity');
         const currentWeatherStatusEl = document.getElementById('current-weather-status');
         
-        // Background elements
         const sunnyBg = document.getElementById('sunny-bg');
         const rainyBg = document.getElementById('rainy-bg');
         const cloudyBg = document.getElementById('cloudy-bg');
+        const snowyBg = document.getElementById('snowy-bg');
+        const thunderstormBg = document.getElementById('thunderstorm-bg');
+        const foggyBg = document.getElementById('foggy-bg');
 
-        // Set default date to today
+
         dateInput.value = new Date().toISOString().split('T')[0];
 
         predictBtn.addEventListener('click', async () => {
             const place = placeInput.value;
             const date = dateInput.value;
 
-            if (!place || !date) {
-                showError("Please provide a location and a date.");
-                return;
-            }
+            if (!place || !date) { showError("Please provide a location and a date."); return; }
 
             resultContainer.classList.remove('hidden');
             predictionOutput.classList.add('hidden');
@@ -238,37 +253,29 @@
             loader.classList.remove('hidden');
 
             try {
-                // --- 1. Geocode Location Name to Coordinates ---
                 const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`;
-                const geoResponse = await fetch(geoUrl, {
-                    headers: { 'User-Agent': 'NASA Rain Predictor App/1.0' }
-                });
+                const geoResponse = await fetch(geoUrl, { headers: { 'User-Agent': 'NASA Rain Predictor App/1.0' } });
                 if (!geoResponse.ok) throw new Error('Geocoding service is unavailable.');
                 
                 const geoData = await geoResponse.json();
-                if (geoData.length === 0) {
-                    throw new Error(`Could not find coordinates for "${place}". Please try a more specific location.`);
-                }
-                const lat = geoData[0].lat;
-                const lon = geoData[0].lon;
+                if (geoData.length === 0) throw new Error(`Could not find coordinates for "${place}". Please try a more specific location.`);
                 
-                // --- 2. Fetch both current weather and historical probability in parallel ---
+                const { lat, lon, display_name } = geoData[0];
+                
                 const fetchCurrentWeather = async () => {
                     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code`;
                     const response = await fetch(weatherUrl);
-                    if (!response.ok) console.error('Could not fetch current weather.');
-                    const data = await response.json();
-                    displayCurrentWeather(data.current);
+                    if (response.ok) displayCurrentWeather((await response.json()).current);
                 };
                 
-                const calculateHistoricalProbability = calculateAndDisplayProbability(lat, lon, date, geoData[0].display_name);
-
-                await Promise.all([fetchCurrentWeather(), calculateHistoricalProbability]);
+                await Promise.all([
+                    fetchCurrentWeather(),
+                    calculateAndDisplayProbability(lat, lon, date, display_name)
+                ]);
                 
                 predictionOutput.classList.remove('hidden');
 
             } catch (error) {
-                console.error("Error during prediction process:", error);
                 showError(error.message || "An unexpected error occurred.");
             } finally {
                 loader.classList.add('hidden');
@@ -279,6 +286,10 @@
             const targetDate = new Date(dateString + 'T12:00:00Z');
             const N = 15; 
             let rainyDaysCount = 0;
+            let totalTempOnRainyDays = 0, tempOnRainyDaysCount = 0;
+            let totalTempAllDays = 0, tempAllDaysCount = 0;
+            let totalHumidity = 0, humidityDaysCount = 0;
+
             const promises = [];
 
             for (let i = 1; i <= N; i++) {
@@ -287,7 +298,7 @@
                 const pastDate = new Date(targetDate);
                 pastDate.setUTCFullYear(year);
                 const formattedDate = formatDateForApi(pastDate);
-                const parameters = "PRECTOTCORR"; 
+                const parameters = "PRECTOTCORR,T2M,RH2M"; 
                 const apiUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`;
                 promises.push(fetch(apiUrl).then(res => res.ok ? res.json() : null));
             }
@@ -297,10 +308,29 @@
             results.forEach(data => {
                 if (data && data.properties?.parameter?.PRECTOTCORR) {
                     const precipData = data.properties.parameter.PRECTOTCORR;
+                    const tempData = data.properties.parameter.T2M;
+                    const humidityData = data.properties.parameter.RH2M;
                     const dateKey = Object.keys(precipData)[0];
+
                     if (dateKey && precipData[dateKey] > -999) {
                         validYears++;
-                        if (precipData[dateKey] > 0.5) rainyDaysCount++;
+                        
+                        if (tempData[dateKey] > -999) {
+                            totalTempAllDays += tempData[dateKey];
+                            tempAllDaysCount++;
+                        }
+                        if (humidityData[dateKey] > -999) {
+                            totalHumidity += humidityData[dateKey];
+                            humidityDaysCount++;
+                        }
+
+                        if (precipData[dateKey] > 0.5) {
+                             rainyDaysCount++;
+                             if(tempData[dateKey] > -999) {
+                                totalTempOnRainyDays += tempData[dateKey];
+                                tempOnRainyDaysCount++;
+                             }
+                        }
                     }
                 }
             });
@@ -308,63 +338,90 @@
             if (validYears === 0) throw new Error("Could not retrieve any historical data for this date.");
             
             const probability = Math.round((rainyDaysCount / validYears) * 100);
-            displayProbability(probability, dateString, validYears, locationName);
+            const avgTempOnRainyDays = tempOnRainyDaysCount > 0 ? totalTempOnRainyDays / tempOnRainyDaysCount : 10;
+            const avgTempAllDays = tempAllDaysCount > 0 ? totalTempAllDays / tempAllDaysCount : 15;
+            const avgHumidity = humidityDaysCount > 0 ? totalHumidity / humidityDaysCount : 50;
+
+            displayProbability(probability, dateString, validYears, locationName, avgTempOnRainyDays, avgTempAllDays, avgHumidity);
         }
 
-        function displayProbability(probability, dateString, yearsOfData, locationName) {
+        function displayProbability(probability, dateString, yearsOfData, locationName, avgTempRainy, avgTempAll, avgHumidity) {
             const probabilityTextEl = document.getElementById('probability-text');
             const probabilitySummaryEl = document.getElementById('probability-summary');
             const probabilityBarEl = document.getElementById('probability-bar');
+            const temperatureSummaryEl = document.getElementById('temperature-summary');
 
             probabilityTextEl.textContent = `${probability}%`;
             predictionForDateEl.textContent = `for ${formatDateForDisplay(dateString)}`;
             locationInfo.textContent = `Based on ${yearsOfData} years of data for ${locationName.split(',')[0]}`;
 
-            let summary = "";
-            let barColorClass = "";
-            let textColorClass = "";
-
+            let summary, barColorClass, textColorClass;
             resetBackgrounds();
 
+            // Set Temperature Message
+            if(avgTempAll > 35) {
+                temperatureSummaryEl.textContent = "Historically Hot";
+                temperatureSummaryEl.className = 'text-lg mt-2 text-orange-300';
+            } else if (avgTempAll < 5) {
+                temperatureSummaryEl.textContent = "Historically Cold";
+                temperatureSummaryEl.className = 'text-lg mt-2 text-cyan-300';
+            } else {
+                 temperatureSummaryEl.textContent = "";
+            }
+
             if (probability <= 30) {
-                summary = "Low Chance of Rain";
+                summary = "Low Chance of Precipitation";
                 barColorClass = "bg-green-500";
                 textColorClass = "text-green-400";
                 sunnyBg.classList.remove('hidden');
                 bodyEl.className = 'bg-gradient-to-br from-sky-400 to-blue-600 min-h-screen flex items-center justify-center p-4';
+            } else if (probability <= 60 && avgHumidity > 95) {
+                summary = "High Chance of Fog";
+                barColorClass = "bg-gray-400";
+                textColorClass = "text-gray-300";
+                foggyBg.classList.remove('hidden');
+                bodyEl.className = 'bg-gradient-to-br from-slate-500 to-gray-600 min-h-screen flex items-center justify-center p-4';
             } else if (probability <= 60) {
-                summary = "Moderate Chance of Rain";
+                summary = "Moderate Chance of Precipitation";
                 barColorClass = "bg-yellow-500";
                 textColorClass = "text-yellow-400";
                 cloudyBg.classList.remove('hidden');
-                restartCloudAnimation();
                 bodyEl.className = 'bg-gradient-to-br from-slate-600 to-gray-700 min-h-screen flex items-center justify-center p-4';
-            } else {
-                summary = "High Chance of Rain";
-                barColorClass = "bg-red-500";
-                textColorClass = "text-red-400";
-                rainyBg.classList.remove('hidden');
-                createRain();
-                bodyEl.className = 'bg-gradient-to-br from-gray-800 to-slate-900 min-h-screen flex items-center justify-center p-4';
+            } else { // High probability
+                if (avgTempRainy <= 2) {
+                    summary = "High Chance of Snow";
+                    barColorClass = "bg-sky-300";
+                    textColorClass = "text-sky-200";
+                    snowyBg.classList.remove('hidden');
+                    createSnow();
+                    bodyEl.className = 'bg-gradient-to-br from-slate-400 to-gray-600 min-h-screen flex items-center justify-center p-4';
+                } else if (probability > 85) {
+                    summary = "High Chance of Heavy Rain / Storm";
+                    barColorClass = "bg-purple-500";
+                    textColorClass = "text-purple-300";
+                    thunderstormBg.classList.remove('hidden');
+                    createThunderstorm();
+                    bodyEl.className = 'bg-gradient-to-br from-gray-900 to-indigo-900 min-h-screen flex items-center justify-center p-4';
+                } else {
+                    summary = "High Chance of Rain";
+                    barColorClass = "bg-red-500";
+                    textColorClass = "text-red-400";
+                    rainyBg.classList.remove('hidden');
+                    createRain();
+                    bodyEl.className = 'bg-gradient-to-br from-gray-800 to-slate-900 min-h-screen flex items-center justify-center p-4';
+                }
             }
 
             probabilitySummaryEl.textContent = summary;
-            
-            setTimeout(() => {
-                probabilityBarEl.style.width = `${probability}%`;
-            }, 10);
-
-            probabilityBarEl.className = 'h-4 rounded-full transition-all duration-1000 ease-out';
-            probabilityTextEl.className = 'text-6xl font-bold transition-colors duration-500';
-            
-            probabilityBarEl.classList.add(barColorClass);
-            probabilityTextEl.classList.add(textColorClass);
+            setTimeout(() => { probabilityBarEl.style.width = `${probability}%`; }, 10);
+            probabilityBarEl.className = `h-4 rounded-full transition-all duration-1000 ease-out ${barColorClass}`;
+            probabilityTextEl.className = `text-6xl font-bold transition-colors duration-500 ${textColorClass}`;
             probabilitySummaryEl.className = `text-xl mt-1 mb-2 transition-colors duration-500 ${textColorClass}`;
         }
-
-        function createRain() {
+        
+        function createRain(density = 50) {
             rainyBg.innerHTML = '';
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < density; i++) {
                 const drop = document.createElement('div');
                 drop.className = 'rain-drop';
                 drop.style.left = `${Math.random() * 100}vw`;
@@ -373,23 +430,25 @@
                 rainyBg.appendChild(drop);
             }
         }
+        function createThunderstorm() { createRain(100); }
 
-        function restartCloudAnimation() {
-            const clouds = cloudyBg.querySelectorAll('.cloud');
-            clouds.forEach(cloud => {
-                cloud.style.animation = 'none';
-                void cloud.offsetWidth; // Trigger reflow
-            });
-            cloudyBg.querySelector('.cloud-1').style.animation = `drift 25s linear infinite`;
-            cloudyBg.querySelector('.cloud-2').style.animation = `drift 35s linear infinite 5s`;
-            cloudyBg.querySelector('.cloud-3').style.animation = `drift 30s linear infinite 2s`;
+        function createSnow() {
+            snowyBg.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snow-flake';
+                flake.style.left = `${Math.random() * 100}vw`;
+                flake.style.animationDuration = `${5 + Math.random() * 5}s`;
+                flake.style.animationDelay = `${Math.random() * 10}s`;
+                flake.style.transform = `scale(${0.5 + Math.random() * 0.5})`;
+                snowyBg.appendChild(flake);
+            }
         }
         
         function resetBackgrounds() {
-            sunnyBg.classList.add('hidden');
-            rainyBg.classList.add('hidden');
-            cloudyBg.classList.add('hidden');
+            [sunnyBg, rainyBg, cloudyBg, snowyBg, thunderstormBg, foggyBg].forEach(bg => bg.classList.add('hidden'));
             rainyBg.innerHTML = '';
+            snowyBg.innerHTML = '';
         }
 
         function formatDateForApi(date) {
@@ -399,9 +458,9 @@
             return `${year}${month}${day}`;
         }
 
-        function formatDateForDisplay(dateString) { // e.g., "2025-10-04"
+        function formatDateForDisplay(dateString) {
             const [year, month, day] = dateString.split('-');
-            return `${day}-${month}-${year}`; // Format as DD-MM-YYYY
+            return `${day}-${month}-${year}`;
         }
 
         function displayCurrentWeather(current) {
@@ -413,12 +472,7 @@
         
         function getWeatherDescription(code) {
              const descriptions = {
-                0: 'Clear', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Rime Fog',
-                51: 'Light Drizzle', 53: 'Drizzle', 55: 'Dense Drizzle', 56: 'Freezing Drizzle', 57: 'Dense Freezing Drizzle',
-                61: 'Slight Rain', 63: 'Rain', 65: 'Heavy Rain', 66: 'Freezing Rain', 67: 'Heavy Freezing Rain',
-                71: 'Slight Snow', 73: 'Snow', 75: 'Heavy Snow', 77: 'Snow Grains',
-                80: 'Slight Showers', 81: 'Showers', 82: 'Violent Showers', 85: 'Snow Showers', 86: 'Heavy Snow Showers',
-                95: 'Thunderstorm', 96: 'Thunderstorm & Hail', 99: 'Thunderstorm & Hail'
+                0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Rime Fog',51:'Light Drizzle',53:'Drizzle',55:'Dense Drizzle',56:'Freezing Drizzle',57:'Dense Freezing Drizzle',61:'Slight Rain',63:'Rain',65:'Heavy Rain',66:'Freezing Rain',67:'Heavy Freezing Drivvle',71:'Slight Snow',73:'Snow',75:'Heavy Snow',77:'Snow Grains',80:'Slight Showers',81:'Showers',82:'Violent Showers',85:'Snow Showers',86:'Heavy Snow Showers',95:'Thunderstorm',96:'Thunderstorm & Hail',99:'Thunderstorm & Hail'
             };
             return descriptions[code] || 'Unknown';
         }
